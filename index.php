@@ -3,12 +3,13 @@
 header("Content-Type: application/json");
 
 echo json_encode([
-    "message" => "Welcome to the Attendance PHP Backend API",
+    "message" => "Welcome to the Admin Management PHP Backend API",
     "status" => "OK",
     "available_routes" => [
-        "POST /auth.php?action=register" => "Register a new user",
-        "POST /auth.php?action=login" => "Login user",
-        "POST /forgot.php" => "Request password reset",
-        "GET /user.php" => "Fetch user profile (auth required)"
+        "POST /user.php?action=signup" => "Create a new admin (requires main admin password)",
+        "GET /user.php?action=getAll" => "Fetch all admins",
+        "GET /user.php?action=get&username={username}" => "Fetch a specific admin by username",
+        "PUT /user.php?action=update&username={username}" => "Update admin details by username",
+        "DELETE /user.php?action=delete&username={username}" => "Delete an admin by username"
     ]
 ]);
