@@ -1,6 +1,9 @@
 <?php
 require_once 'config.php'; // To access MAIN_ADMIN_PASSWORD
+require_once 'vendor/autoload.php'; // Firebase\JWT
 
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 // Used in user.php to quickly validate the main admin password
 function adminSignUpAuth($providedPassword) {
     return $providedPassword === MAIN_ADMIN_PASSWORD;
@@ -41,6 +44,29 @@ function validateAdminSignup($data) {
         echo json_encode([
             'message' => 'Password must be at least 8 characters long and include a capital letter, small letter, number, and special symbol.'
         ]);
+        exit;
+    }
+}
+
+// Login Authentication
+
+function authenticateToken() {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? '';
+    $token = str_replace('Bearer ', '', $authHeader);
+
+    if (!$token) {
+        http_response_code(401);
+        echo json_encode(['message' => 'Unauthorized: No token provided']);
+        exit;
+    }
+
+    try {
+        $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
+        return $decoded;
+    } catch (Exception $e) {
+        http_response_code(403);
+        echo json_encode(['message' => 'Invalid token', 'error' => $e->getMessage()]);
         exit;
     }
 }
