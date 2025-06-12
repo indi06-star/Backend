@@ -1,4 +1,6 @@
 <?php
+// user.php
+
 require_once 'config.php';
 require_once 'database.php';
 require_once 'auth.php';
@@ -8,24 +10,67 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// ✅ Add CORS headers
-header("Access-Control-Allow-Origin: http://127.0.0.1:5501");
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Credentials: true');
-header('Content-Type: application/json');
+// ✅ Handle CORS
+function cors() {
+    // Define the specific allowed origin for your frontend.
+    // This MUST precisely match the origin (protocol://domain:port) of your Dashboard.html.
+    $allowed_frontend_origin = "http://127.0.0.1:5500"; 
 
-// ✅ Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
+    // --- Start Debugging and Direct CORS Header Setting ---
+    // Log the incoming Origin header and the configured allowed origin for debugging.
+    // Check your PHP error log (e.g., Apache error.log or terminal if using PHP's built-in server)
+    // for these messages.
+    error_log("CORS Debug: Incoming HTTP_ORIGIN: " . ($_SERVER['HTTP_ORIGIN'] ?? 'NOT SET'));
+    error_log("CORS Debug: Configured ALLOWED_ORIGIN: " . $allowed_frontend_origin);
+
+    // Directly set the Access-Control-Allow-Origin header.
+    // For local development, this direct setting is often simplest.
+    // In production, you might want more sophisticated checks, but this is the core.
+    header("Access-Control-Allow-Origin: " . $allowed_frontend_origin);
+    // --- End Debugging and Direct CORS Header Setting ---
+
+    // Allow credentials (like cookies or HTTP authentication) to be sent.
+    header("Access-Control-Allow-Credentials: true");
+
+    // Cache the preflight request for 1 day to reduce overhead.
+    header("Access-Control-Max-Age: 86400"); 
+
+    // Handle preflight OPTIONS requests.
+    // The browser sends an OPTIONS request before certain "complex" requests (like POST with JSON).
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        // Allow the methods specified by the client in the preflight request.
+        if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])) {
+            header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+        }
+
+        // Allow the headers specified by the client in the preflight request.
+        if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
+            header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+        }
+
+        // Send a 204 No Content response for successful preflight and exit.
+        http_response_code(204); 
+        exit(0); // Terminate script execution after preflight
+    }
 }
+
+// ✅ Run CORS handling first
+cors();
+
+// ✅ Default content type for all API responses to JSON.
+header("Content-Type: application/json");
+
+// ---
+## Admin Management Functions
+// ---
 
 // ✅ Create new admin
 function signUpAdmin($data) {
     global $conn;
 
-    validateAdminSignup($data); // from auth.php
+    // Validate admin signup data. Assumes this function is in auth.php
+    // and throws an exception or returns an error if validation fails.
+    validateAdminSignup($data);
 
     $username = $data['username'];
     $email = $data['email'];
@@ -49,7 +94,8 @@ function signUpAdmin($data) {
         ]);
     } else {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to sign up admin']);
+        // Provide more detailed error message from the database for debugging.
+        echo json_encode(['error' => 'Failed to sign up admin: ' . $stmt->error]); 
     }
 
     $stmt->close();
@@ -88,7 +134,7 @@ function getAdminById($id) {
     $stmt->close();
 }
 
-// ✅ Get admin by username
+// ✅ Get admin by Username
 function getAdminByUsername($username) {
     global $conn;
 
@@ -107,7 +153,7 @@ function getAdminByUsername($username) {
     $stmt->close();
 }
 
-// ✅ Update admin by username
+// ✅ Update admin by Username
 function updateAdminByUsername($username, $data) {
     global $conn;
 
@@ -129,10 +175,13 @@ function updateAdminByUsername($username, $data) {
 
     $stmt = $conn->prepare("UPDATE admin SET username = ?, email = ?, phone_number = ? WHERE username = ?");
     $stmt->bind_param("ssss", $newUsername, $email, $phone, $username);
-    $stmt->execute();
+    if ($stmt->execute()) {
+        echo json_encode(['message' => 'Admin updated successfully.']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update admin: ' . $stmt->error]);
+    }
     $stmt->close();
-
-    echo json_encode(['message' => 'Admin updated successfully.']);
 }
 
 // ✅ Update admin by ID
@@ -157,13 +206,16 @@ function updateAdminById($id, $data) {
 
     $stmt = $conn->prepare("UPDATE admin SET username = ?, email = ?, phone_number = ? WHERE id = ?");
     $stmt->bind_param("sssi", $username, $email, $phone, $id);
-    $stmt->execute();
+    if ($stmt->execute()) {
+        echo json_encode(['message' => 'Admin updated successfully by ID.']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update admin: ' . $stmt->error]);
+    }
     $stmt->close();
-
-    echo json_encode(['message' => 'Admin updated successfully by ID.']);
 }
 
-// ✅ Delete admin by username
+// ✅ Delete admin by Username
 function deleteAdminByUsername($username) {
     global $conn;
 
@@ -199,13 +251,16 @@ function deleteAdminById($id) {
     $stmt->close();
 }
 
-// ✅ Handle Routing Based on Method + Action
+// ---
+## Handle Routing Based on Method + Action
+// ---
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
-if ($method === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
+// Get the raw POST/PUT data
+$input = json_decode(file_get_contents('php://input'), true);
 
+if ($method === 'POST') {
     if ($action === 'signup') {
         signUpAdmin($input);
     } else {
@@ -231,8 +286,6 @@ if ($method === 'POST') {
     }
 
 } elseif ($method === 'PUT') {
-    $input = json_decode(file_get_contents('php://input'), true);
-
     if ($action === 'update') {
         if (isset($_GET['username'])) {
             updateAdminByUsername($_GET['username'], $input);
@@ -266,3 +319,4 @@ if ($method === 'POST') {
     http_response_code(405);
     echo json_encode(['message' => 'Method Not Allowed']);
 }
+?>
