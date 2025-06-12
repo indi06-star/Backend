@@ -20,3 +20,7 @@ echo json_encode([
         "DELETE /user.php?action=delete&username={username}" => "Delete an admin by username"
     ]
 ]);
+
+
+
+?>

@@ -47,7 +47,7 @@ function validateAdminSignup($data) {
     $isStrong = preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $password);
     if (!$isStrong) {
         http_response_code(400);
-        echo json_encode([
+        echo json_encode(value: [
             'message' => 'Password must be at least 8 characters long and include a capital letter, small letter, number, and special symbol.'
         ]);
         exit;
@@ -76,3 +76,5 @@ function authenticateToken() {
         exit;
     }
 }
+
+
