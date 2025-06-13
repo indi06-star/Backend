@@ -1,6 +1,16 @@
 <?php
 // login.php
 
+// Enable CORS
+header("Access-Control-Allow-Origin: *"); // Replace * with specific origin if needed
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 require_once 'database.php';
 require_once 'vendor/autoload.php'; // For Firebase\JWT
 
@@ -51,12 +61,6 @@ echo json_encode([
         'phone_number' => $admin['phone_number']
     ]
 ]);
-?>
 
-<?php
-// generate secret key
 
-$secret = bin2hex(random_bytes(64));
-echo "Your new secret key: " . $secret;
-?>
 
