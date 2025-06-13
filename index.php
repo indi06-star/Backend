@@ -37,5 +37,3 @@ echo json_encode([
         "POST/login.php?action=login" => "Admin Login"
     ]
 ]);
-
-?>
