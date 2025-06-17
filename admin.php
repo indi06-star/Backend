@@ -1,5 +1,5 @@
 <?php
-// user.php
+// admin.php
 
 require_once 'config.php';
 require_once 'database.php';
@@ -14,7 +14,7 @@ error_reporting(E_ALL);
 function cors() {
     // Define the specific allowed origin for your frontend.
     // This MUST precisely match the origin (protocol://domain:port) of your Dashboard.html.
-    $allowed_frontend_origin = "http://127.0.0.1:5500"; 
+    $allowed_frontend_origin = "http://127.0.0.1:5501"; 
 
     // --- Start Debugging and Direct CORS Header Setting ---
     // Log the incoming Origin header and the configured allowed origin for debugging.
@@ -319,4 +319,4 @@ if ($method === 'POST') {
     http_response_code(405);
     echo json_encode(['message' => 'Method Not Allowed']);
 }
-?>
+

@@ -14,7 +14,7 @@ require_once 'vendor/autoload.php'; // Firebase\JWT (ensure you have composer in
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// Used in user.php to quickly validate the main admin password
+// Used in admin.php to quickly validate the main admin password
 function adminSignUpAuth($providedPassword) {
     // This function will rely on MAIN_ADMIN_PASSWORD from config.php
     return $providedPassword === MAIN_ADMIN_PASSWORD;
